@@ -22,7 +22,7 @@ from nltk.tokenize import word_tokenize
 #nltk.download('stopwords')
 #nltk.download('punkt_tab')
 
-SPECIAL_CHARS = ",!?:;@#$%^&*()\"'+1234567890/=-{}`~<>[]\\_·›”’“"
+SPECIAL_CHARS = ",!?:;@#$%^&*()\"'+1234567890/–=-{}`~<>[]\\_·›”’“"
 # Store only the top 75 BoWs
 MAX_BOW = 75
 
@@ -180,7 +180,7 @@ class AnalysisSessionDay(Base):
         return {
             "day": self.day,
             # Give back viewing time in seconds
-            "viewing_time": self.viewing_time / 1000,
+            "viewing_time": self.viewing_time,
             "number_websites": self.number_websites,
             "sentiment_score": self.sentiment_score / self.viewing_time,
             "emotions": self.emotions,

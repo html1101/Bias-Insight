@@ -171,13 +171,44 @@ const fillTopWords = async () => {
     const wordElem = document.querySelector(".top-words");
 
     // Go through each word and render it
-    for(let wordPop of bow) {
+    const bowSort = bow.sort(e => e[1]);
+    for(let wordPop of bowSort) {
         const word = document.createElement("div");
         word.className = "word";
-        word.innerHTML = `<b>${wordPop[0]}</b><br/>Top ${Math.round(wordPop[1] * 100 / total)}% searched term`
+        word.innerHTML = `<b>${wordPop[0]}</b><br/>Top ${100 - Math.round(wordPop[1] * 100 / total)}% searched term`
 
         wordElem.appendChild(word);
     }
+}
+
+const fillInsights = async () => {
+    // Fetch information about insights
+    const insights = await fetch("http://localhost:8000/overall_results").then(e => e.json());
+    
+    const { total_viewing_time, weighted_scores } = insights;
+
+    // (1) Find top negative vs positive
+    const { emotions, political_bias } = weighted_scores;
+    const neg = (["anger", "disgust", "fear"].map(e => emotions[e])).reduce((a, b) => a+b);
+    const pos = (["joy", "sadness", "surprise"].map(e => emotions[e])).reduce((a, b) => a+b);
+    const total = emotions.neutral + neg + pos;
+
+    const negElem = document.querySelector(".insights .negative");
+    negElem.querySelector(".percent").innerHTML = Math.round((neg > pos ? neg : pos) * 100 / total) + "%";
+    negElem.querySelector("u").innerHTML = neg > pos ? "negative" : "positive";
+
+    const timeElem = document.querySelector(".time-browsing");
+    timeElem.querySelector(".percent").innerHTML = total_viewing_time < 60 ?
+        total_viewing_time + "s" : total_viewing_time / 60 < 60 ? Math.round(total_viewing_time/60 * 100)/100 + "min" : 
+        Math.round(total_viewing_time/60/60 * 100)/100 + "hr";
+
+    const { left, center, right } = political_bias;
+    const totalPol = left + center + right;
+    const politicalElem = document.querySelector(".insights .political");
+    const bestVal = left > center && left > right ? "left-leaning" :
+        right > center ? "right-leaning" : "centrist";
+    politicalElem.querySelector(".percent").innerHTML = Math.round(Math.max(left, center, right) * 100 / totalPol) + "%";
+    politicalElem.querySelector("u").innerHTML = bestVal;
 }
 
 // Fill chart with information from list
@@ -188,3 +219,6 @@ fillTodayStatus();
 
 // Fill with top 75 words
 fillTopWords();
+
+// Fill insights with information about overall content consumed
+fillInsights();
