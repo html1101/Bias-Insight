@@ -4,6 +4,7 @@ body {
     font-family: "Atma", serif;
     font-size: 18px;
     padding-bottom: 2em;
+    min-width: 400px;
     --color-1: #88498F;
     --color-2: #779FA1;
     --color-3: #E0CBA8;
