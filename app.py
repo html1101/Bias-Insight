@@ -60,14 +60,29 @@ def load_model(model_name):
         raise RuntimeError(f"Failed to load model {model_name}: {str(e)}")
 
 
+## loads models and labels
+web_class_model = AutoModelForSequenceClassification.from_pretrained(
+    "WebOrganizer/TopicClassifier",
+    trust_remote_code=True,
+    use_memory_efficient_attention=False)
+web_class_tokenizer = AutoTokenizer.from_pretrained("WebOrganizer/TopicClassifier", trust_remote_code=True)
 sentiment_model, sentiment_tokenizer = load_model("distilbert/distilbert-base-uncased-finetuned-sst-2-english")
 emotion_model, emotion_tokenizer = load_model("j-hartmann/emotion-english-distilroberta-base")
 political_model, political_tokenizer = load_model("premsa/political-bias-prediction-allsides-BERT")
 stereo_model, stereo_tokenizer = load_model("wu981526092/Sentence-Level-Stereotype-Detector")
 
+
+
 emotion_labels = ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
 stereo_labels = ["unrelated", "stereotype_gender", "stereotype_race", "stereotype_profession", "stereotype_religion"]
 political_labels = ["left", "center", "right"]
+web_class_labels = [
+    "Adult", "Art & Design", "Software Dev.", "Crime & Law", "Education & Jobs",
+    "Hardware", "Entertainment", "Social Life", "Fashion & Beauty", "Finance & Business",
+    "Food & Dining", "Games", "Health", "History", "Home & Hobbies", "Industrial",
+    "Literature", "Politics", "Religion", "Science & Tech.", "Software",
+    "Sports & Fitness", "Transportation", "Travel"
+]
 
 def add_to_json(json, added, labels, time, prev_time):
     new_json = copy.deepcopy(json)
@@ -187,6 +202,12 @@ class AnalysisSessionDay(Base):
             "political_bias": self.political_bias,
             "stereotype_score": self.stereotype_score,
         }
+    
+class WebsiteClassification (Base):
+    __tablename__ ="website_classifications"
+    id=Column(Integer,primary_key=True, index=True)
+    label=Column(String, nullable=False)
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -238,6 +259,42 @@ async def classify_texts(model, tokenizer, texts):
     with torch.no_grad():
         outputs = model(**inputs)
     return torch.nn.functional.softmax(outputs.logits, dim=-1).cpu().numpy().tolist()  # Convert tensors to lists
+
+async def classify_websites(model, tokenizer, website, text):
+    try:
+        combined_input = f"{website} {text}"
+        inputs = tokenizer(combined_input, return_tensors="pt", truncation=True, padding=True).to(device)
+        
+        with torch.no_grad():
+            outputs = model(**inputs)       
+        
+        probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        predicted_index = probs.argmax(dim=-1).cpu().item()
+        
+        return predicted_index
+
+    except Exception as e:
+        print(f"Error in classify_websites: {str(e)}")
+        raise e
+
+@app.post("/webclass")
+async def class_webs(input_data: TextInput, db: Session = Depends(get_db)):
+    
+    if not input_data.website or not input_data.data:
+        raise HTTPException(status_code=400, detail="Both website and text data are required.")
+          
+    web_classification_index = await classify_websites(web_class_model, web_class_tokenizer, input_data.website,input_data.data)
+    
+    record = WebsiteClassification(
+        label=web_class_labels[web_classification_index]
+    )
+    db.add(record)
+    db.commit()
+
+    return {
+        "website_classification": web_class_labels[web_classification_index]
+    }
+
 
 @app.post("/SMBSanalyze")
 async def analyze_texts(input_data: TextInput, db: Session = Depends(get_db)):
@@ -340,7 +397,7 @@ async def update_viewing_time(time_data: TimeUpdate, db: Session = Depends(get_d
         # remove current_day and restart
         if (today and current_day and current_day.day != dmy):
             print("Day changed, removing element")
-            current_day.remove()
+            db.delete(current_day)
             current_day = None
 
         # If day doesn't exist, add it to database
@@ -496,6 +553,46 @@ async def get_overall_accumulated_results(website: str = None, db: Session = Dep
         "weighted_scores": weighted_scores
     }
 
+@app.get("/most_frequent_label")
+def get_most_frequent_label(db: Session = Depends(get_db)):
+    result = (
+        db.query(WebsiteClassification.label, func.count(WebsiteClassification.id).label("count"))
+        .group_by(WebsiteClassification.label)
+        .order_by(func.count(WebsiteClassification.id).desc())
+        .first()
+    )   
+    if result:
+        label_messages = {
+            "Adult": "Ah, exploring life's spicy corners, aren't we?",
+            "Art & Design": "You're painting reality one brilliant idea at a time!",
+            "Software Dev.": "Clearly, you speak fluent Python and dream in JavaScript.",
+            "Crime & Law": "Sherlock would be proud of your detective instincts!",
+            "Education & Jobs": "Always chasing knowledge—professors envy your enthusiasm.",
+            "Hardware": "Your idea of fun involves wires, chips, and just a hint of solder smoke.",
+            "Entertainment": "Hollywood could use someone with your impeccable taste.",
+            "Social Life": "Your notifications must rival Times Square at night!",
+            "Fashion & Beauty": "Even your pajamas could walk a runway.",
+            "Finance & Business": "Wall Street should watch out for your savvy moves!",
+            "Food & Dining": "Clearly, you believe life is too short for bland meals.",
+            "Games": "Leveling up is basically your cardio.",
+            "Health": "Avocados and yoga mats fear your unwavering dedication.",
+            "History": "You've probably corrected a historian once or twice.",
+            "Home & Hobbies": "You're turning DIY into an Olympic sport.",
+            "Industrial": "Factories run smoother when you're in charge!",
+            "Literature": "Shakespeare has nothing on your plot twists.",
+            "Politics": "You're the master of diplomatic tweets and heated debates.",
+            "Religion": "Your search for meaning deserves its own philosophy textbook.",
+            "Science & Tech.": "You probably whisper \"Eureka!\" in your sleep.",
+            "Software": "Debugging code is your favorite adrenaline sport.",
+            "Sports & Fitness": "Even your sweat has a competitive streak.",
+            "Transportation": "Your mind travels faster than a Tesla on autopilot.",
+            "Travel": "Your passport stamps could fill a novel!"
+        }
+        message = label_messages.get(result.label, "")
+        return {"most_frequent_label": result.label, "count": result.count, "message": message}
+    
+    else:
+        raise HTTPException(status_code=404, detail="No classification records found.")
 
 if __name__ == "__main__":
     import uvicorn
