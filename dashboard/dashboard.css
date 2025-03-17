@@ -98,6 +98,7 @@ body {
 
 .stacked-charts .big-chart {
     flex-grow: 1;
+    position: relative;
 }
 
 .subtitle {
@@ -106,9 +107,15 @@ body {
     align-items: center;
 }
 
-#different_options {
+#time_options {
     margin-left: auto;
     margin-right: 15px;
+}
+
+#different_options {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
 }
 
 .top-words {

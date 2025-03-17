@@ -48,7 +48,6 @@ const getDate = () => {
 
 const fillBigChart = async (category = "emotions") => {
     const points = new Array(25).fill(0).map((_, i) => i);
-    console.log("Got date: ", getDate());
     const fetchDay = points.map((_, i) => `${getDate()} (${i.toString().padStart(2, "0")})`);
     let data = {};
     for(let point of fetchDay) {
