@@ -164,9 +164,10 @@ const fillTodayStatus = async () => {
 
 const fillTopWebsites = async () => {
     // Get the top websites from server
-    const { top_labels, all_percentages } = await fetch("http://localhost:8080/most_frequent_label");
+    const { top_labels, all_percentages } = await fetch("http://localhost:8080/most_frequent_label").then(e => e.json());
     
     // Get the top label
+    console.log("Top", top_labels, all_percentages);
     const [top_label] = top_labels;
 
     const allLabels = ["Adult", "Art & Design", "Software Dev.", "Crime & Law", "Education & Jobs",
@@ -189,8 +190,10 @@ const fillTopWebsites = async () => {
 
         // Add the element and make it the width of the percent
         const categoryElem = document.createElement("div");
-        if(percentage > 10) categoryElem.innerHTML = label;
-        categoryElem.style.setProperty("--percent", percentage);
+        if(percentage > 10) {
+            categoryElem.innerHTML = label;
+        }
+        categoryElem.style.setProperty("--percent", `${percentage}%`);
         categoryElem.className = `${label.split(" ")[0]} category`;
         categoryElem.style.background = colors[label];
         categoriesElem.appendChild(categoryElem);
@@ -199,7 +202,6 @@ const fillTopWebsites = async () => {
     // Add the quirky little sentence
     const sentence = top_label.message;
     document.getElementById("category-sentence").innerHTML = sentence;
-
 }
 
 const fillTopWords = async () => {
@@ -260,3 +262,5 @@ fillTopWords();
 
 // Fill insights with information about overall content consumed
 fillInsights();
+
+fillTopWebsites();

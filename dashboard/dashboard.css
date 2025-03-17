@@ -170,8 +170,29 @@ body {
     flex-direction: row;
     text-align: center;
     border: 1.2px solid grey;
+    height: 1.5em;
 }
 .slider > * {
     overflow: hidden;
+    width: var(--percent);
+}
+
+.neg-percent {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    background: grey;
+    height: 1.5em;
+    border-radius: 1em;
+}
+
+.neg-percent-amt {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--angry);
     width: var(--percent);
 }
