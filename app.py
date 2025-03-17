@@ -27,7 +27,6 @@ from nltk.tokenize import word_tokenize
 from label_message import label_messages
 
 
-
 SPECIAL_CHARS = ",!?:;@#$%^&*()\"'+1234567890/–=-{}`~<>[]\\_·›”’“"
 # Store only the top 75 BoWs
 MAX_BOW = 75
