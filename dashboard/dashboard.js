@@ -51,13 +51,13 @@ const fillBigChart = async (category = "emotions") => {
     const fetchDay = points.map((_, i) => `${getDate()} (${i.toString().padStart(2, "0")})`);
     let data = {};
     for(let point of fetchDay) {
-        // Make request for each from backend + populate
-        // We could do this multithreaded, but FastAPI doesn't support it :(
-        const info = await fetch(`http://localhost:8000/day_stats?day=${point}`).then(e => e.json());
+        // Obtain information about our day stats from Chrome storage
+        // TODO
+        const info = await fetch(`http://localhost:8080/day_stats?day=${point}`).then(e => e.json());
         if(info[category]) {
             console.log("Got info: ", info[category]);
             // Go through each category in the emotions + add them to data
-            for(category_attr in info[category]) {
+            for(let category_attr in info[category]) {
                 if(category_attr in data)
                     data[category_attr].push(info[category][category_attr]*sToTime(info.viewing_time));
                 else data[category_attr] = [
@@ -82,7 +82,6 @@ const fillBigChart = async (category = "emotions") => {
         });
     }
 
-    console.log("Plotting data: ", formattedData);
     // Large chart:
     new Chart(ctx, {
     type: 'bar',
@@ -125,7 +124,7 @@ const fillBigChart = async (category = "emotions") => {
 
 const fillTodayStatus = async () => {
     // Get today's information + display in a radar chart
-    const info = (await fetch(`http://localhost:8000/today`).then(e => e.json())).emotions;
+    const info = (await fetch(`http://localhost:8080/today`).then(e => e.json())).emotions;
     // Add each point to 
     
     const todayChart = document.getElementById("today-chart");
@@ -163,8 +162,48 @@ const fillTodayStatus = async () => {
     });
 }
 
+const fillTopWebsites = async () => {
+    // Get the top websites from server
+    const { top_labels, all_percentages } = await fetch("http://localhost:8080/most_frequent_label");
+    
+    // Get the top label
+    const [top_label] = top_labels;
+
+    const allLabels = ["Adult", "Art & Design", "Software Dev.", "Crime & Law", "Education & Jobs",
+        "Hardware", "Entertainment", "Social Life", "Fashion & Beauty", "Finance & Business",
+        "Food & Dining", "Games", "Health", "History", "Home & Hobbies", "Industrial",
+        "Literature", "Politics", "Religion", "Science & Tech.", "Software",
+        "Sports & Fitness", "Transportation", "Travel"];
+
+    // Assign each a color
+    const colors = {};
+    for(let i = 0; i < allLabels.length; i++) {
+        colors[allLabels[i]] = `hsl(${i * 50}, 50%, 75%)`;
+    }
+
+    const categoriesElem = document.querySelector(".categories-slider");
+
+    // Now add all_percentages
+    for(let category of all_percentages) {
+        const { label, count, percentage } = category;
+
+        // Add the element and make it the width of the percent
+        const categoryElem = document.createElement("div");
+        if(percentage > 10) categoryElem.innerHTML = label;
+        categoryElem.style.setProperty("--percent", percentage);
+        categoryElem.className = `${label.split(" ")[0]} category`;
+        categoryElem.style.background = colors[label];
+        categoriesElem.appendChild(categoryElem);
+    }
+
+    // Add the quirky little sentence
+    const sentence = top_label.message;
+    document.getElementById("category-sentence").innerHTML = sentence;
+
+}
+
 const fillTopWords = async () => {
-    const bow = await fetch("http://localhost:8000/get_bow").then(e => e.json());
+    const bow = await fetch("http://localhost:8080/get_bow").then(e => e.json());
     const total = bow.reduce((a, b) => a + b[1], 0);
     console.log("Total: ", total);
     const wordElem = document.querySelector(".top-words");
@@ -182,7 +221,7 @@ const fillTopWords = async () => {
 
 const fillInsights = async () => {
     // Fetch information about insights
-    const insights = await fetch("http://localhost:8000/overall_results").then(e => e.json());
+    const insights = await fetch("http://localhost:8080/overall_results").then(e => e.json());
     
     const { total_viewing_time, weighted_scores } = insights;
 

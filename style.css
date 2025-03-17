@@ -190,10 +190,18 @@ body {
     }
 }
 
+#nav {
+    color: var(--color-1);
+    font-size: 14px;
+    margin-left: auto;
+}
+
 #switchstats {
     color: var(--color-1);
     font-size: 14px;
     position: relative;
-    margin-left: auto;
+    text-align: right;
     cursor: pointer;
+    margin-bottom: -0.5em;
+    margin-top: 5px;
 }

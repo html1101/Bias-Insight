@@ -385,11 +385,25 @@ async def analyze_texts(input_data: TextInput, db: Session = Depends(get_db)):
     stereotype_scores = await classify_texts(get_stereo_model(), [data])
     batch_stereotypes = {label: round(sum(st[i] for st in stereotype_scores) / len(stereotype_scores), 4) for i, label in enumerate(stereo_labels)}
 
+    splitter = re.compile(r"\.|\n")
+    bow = generate_bow(splitter.split(data))
+
+    web_classification_index = await classify_websites(web_class_model, web_class_tokenizer, input_data.website,input_data.data)
+    
+    record = WebsiteClassification(
+        label=web_class_labels[web_classification_index]
+    )
+    db.add(record)
+    db.commit()
+
+
     response = {
         "sentiment_score": batch_sentiment_score,
         "emotions": batch_emotions,
         "political_bias": batch_political_bias,
-        "stereotype": batch_stereotypes
+        "stereotype": batch_stereotypes,
+        "bow": bow,
+        "website_classification": web_class_labels[web_classification_index]
     }
 
     session = AnalysisSession(
@@ -403,8 +417,6 @@ async def analyze_texts(input_data: TextInput, db: Session = Depends(get_db)):
     db.add(session)
     db.commit()
 
-    splitter = re.compile(r"\.|\n")
-    bow = generate_bow(splitter.split(data))
     print("Got bow: ", bow)
     session = db.query(AnalysisBoW).first()
     # If we have one, add to it. If we don't, add a new entry

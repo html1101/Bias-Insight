@@ -18,33 +18,6 @@
     "content_scripts": [
       {
           "matches": [
-              "https://*.bbc.co.uk/*",
-              "https://*.bbc.com/*",
-              "https://*.msn.com/*",
-              "https://*.cnn.com/*",
-              "https://*.nytimes.com/*",
-              "https://*.news.google.com/*",
-              "https://*.theguardian.com/*",
-              "https://*.foxnews.com/*",
-              "https://*.dailymail.co.uk/*",
-              "https://*.news18.com/*",
-              "https://*.finance.yahoo.com/*",
-              "https://*.news.yahoo.com/*",
-              "https://*.people.com/*",
-              "https://*.usatoday.com/*",
-              "https://*.forbes.com/*",
-              "https://*.indiatimes.com/*",
-              "https://*.nypost.com/*",
-              "https://*.india.com/*",
-              "https://*.hindustantimes.com/*",
-              "https://*.washingtonpost.com/*",
-              "https://*.newsweek.com/*",
-              "https://*.cnbc.com/*",
-              "https://*.nbcnews.com/*",
-              "https://*.independent.co.uk/*",
-              "https://*.apnews.com/*",
-              "https://*.indianexpress.com/*",
-              "https://*.reddit.com/*",
               "https://*/*"
           ],
           "js": ["content-script.js"]
