@@ -83,8 +83,8 @@ async function renderStats(useWebsite) {
     renderSliders(data);
   } else {
     webElem.innerHTML = "All Sites";
-    // Get the statistics we have within the server
-    const stats = await fetch(`http://localhost:8000/overall_results`).then(res => res.json());
+    // Get the statistics we have within the Chrome extension (TODO)
+    const stats = await fetch(`http://localhost:8080/overall_results`).then(res => res.json());
     console.log("Got the stats: ", stats);
     // Now fill the stats
     renderSliders(stats.weighted_scores);

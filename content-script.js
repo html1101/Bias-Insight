@@ -1,3 +1,9 @@
+/**
+ * This is the script that hooks into pages--
+ * it takes the content of the page, then analyzes it using the server
+ * and stores the resulting information in Chrome storage.
+ */
+
 // When we first load the page
 // The time we loaded the page in (we update this when page loads)
 let startTime = (new Date()).getTime();
@@ -15,7 +21,7 @@ const getContent = () => {
         // Update timestamp right before we request an analysis
         startTime = (new Date()).getTime()/1000;
         // Once we get content, send it off to Makayla's app
-        fetch("http://localhost:8000/SMBSanalyze", {
+        fetch("http://localhost:8080/SMBSanalyze", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -33,12 +39,12 @@ const getContent = () => {
              * 2. The result of our data analysis (data)
              */
             // const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-            console.log("Data sending message");
-            /*const response = await chrome.runtime.sendMessage({
+            console.log("Data sending message", data);
+            const response = await chrome.runtime.sendMessage({
                 action: "message",
                 website: window.location.href,
                 data
-            });*/
+            });
             res(data);
         })
     });
@@ -55,7 +61,8 @@ window.addEventListener("load", () => {
 })
 
 const leftPage = async () => {
-    await fetch(`http://localhost:8000/update_viewing_time`, {
+    // Tag the viewing time
+    await fetch(`http://localhost:8080/update_viewing_time`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json"

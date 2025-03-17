@@ -101,6 +101,11 @@ body {
     position: relative;
 }
 
+#big-chart {
+    height: 200px;
+    width: 400px;
+}
+
 .subtitle {
     font-size: 23px;
     display: flex;
@@ -114,7 +119,7 @@ body {
 
 #different_options {
     position: absolute;
-    bottom: 5px;
+    top: 5px;
     right: 5px;
 }
 
@@ -151,4 +156,22 @@ body {
 
 .insights .card .percent {
     font-size: 3em;
+}
+
+#today-chart {
+    width: 200px;
+    height: 200px;
+}
+
+.slider {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    border: 1.2px solid grey;
+}
+.slider > * {
+    overflow: hidden;
+    width: var(--percent);
 }
