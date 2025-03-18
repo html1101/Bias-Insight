@@ -102,8 +102,11 @@ body {
 }
 
 #big-chart {
-    height: 200px;
+    height: 250px;
     width: 400px;
+    position: relative;
+    top: 50%;
+    margin-top: -125px;
 }
 
 .subtitle {
@@ -140,10 +143,22 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+    transform-style: preserve-3d;
+    position: relative;
+}
+.insights .card {
+    height: 10em;
 }
 
-.insights .card {
+.insights .card-front, .insights .card-back {
     background: rgba(255, 255, 255, 0.3);
+    text-align: center;
+    height: 10em;
+    border-radius: 10px;
+    border: 1px solid var(--color-1);
+}
+
+.insights .card-front {
     text-align: center;
     height: 10em;
     border-radius: 10px;
@@ -152,6 +167,42 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+}
+
+.insights .inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    text-align: center;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+}
+
+.insights .card-back {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.insights .inner:hover {
+    transform: rotateY(180deg);
+}
+
+.insights .card-front, .insights .card-back {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.insights .card-back {
+  transform: rotateY(180deg);
 }
 
 .insights .card .percent {
@@ -184,8 +235,9 @@ body {
     flex-direction: row;
     text-align: center;
     background: grey;
-    height: 1.5em;
+    height: 0.5em;
     border-radius: 1em;
+    overflow: hidden;
 }
 
 .neg-percent-amt {
@@ -195,4 +247,15 @@ body {
     height: 100%;
     background: var(--angry);
     width: var(--percent);
+    border-radius: 1em;
+}
+
+.neg-insight {
+    font-size: 11px;
+    display: block;
+    margin-bottom: -3em;
+}
+
+.neg-percent-txt {
+    text-align: right;
 }

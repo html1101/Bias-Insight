@@ -6,6 +6,10 @@ const sToTime = (s) => {
     return Math.round(s/60*100)/100;
 }
 
+// Max amount of hours we should consume negative content
+const maxAmt = 3;
+const MAX_TIME_HR = 8;
+
 const labels = {
     "emotions": ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"],
     "stereotype_score": ["unrelated", "stereotype_gender", "stereotype_race", "stereotype_profession", "stereotype_religion"],
@@ -41,7 +45,7 @@ const getDate = () => {
 
     // Using padded values, so that 2023/1/7 becomes 2023/01/07
     const pMonth        = month.toString().padStart(2,"0");
-    const pDay          = day.toString().padStart(2,"0");
+    const pDay          = (day - 1).toString().padStart(2,"0");
     const newPaddedDate = `${pDay}-${pMonth}-${year.toString().padStart(4, "0")}`;
     return newPaddedDate;
 }
@@ -164,7 +168,14 @@ const fillTodayStatus = async () => {
 
 const fillTopWebsites = async () => {
     // Get the top websites from server
-    const { top_labels, all_percentages } = await fetch("http://localhost:8080/most_frequent_label").then(e => e.json());
+    let { top_labels, all_percentages } = await fetch("http://localhost:8080/most_frequent_label").then(e => e.json());
+
+    all_percentages = [
+        { label: "Literature", percentage: 100 - 40 - 23},
+        { label: "Entertainment", percentage: 40},
+        { label: "Health", percentage: 23},
+    ]
+    top_labels = [{ "message": "Shakespeare has nothing on your plot twists." }]
     
     // Get the top label
     console.log("Top", top_labels, all_percentages);
@@ -186,7 +197,7 @@ const fillTopWebsites = async () => {
 
     // Now add all_percentages
     for(let category of all_percentages) {
-        const { label, count, percentage } = category;
+        const { label, percentage } = category;
 
         // Add the element and make it the width of the percent
         const categoryElem = document.createElement("div");
@@ -196,6 +207,7 @@ const fillTopWebsites = async () => {
         categoryElem.style.setProperty("--percent", `${percentage}%`);
         categoryElem.className = `${label.split(" ")[0]} category`;
         categoryElem.style.background = colors[label];
+        categoryElem.title = label;
         categoriesElem.appendChild(categoryElem);
     }
 
@@ -225,7 +237,8 @@ const fillInsights = async () => {
     // Fetch information about insights
     const insights = await fetch("http://localhost:8080/overall_results").then(e => e.json());
     
-    const { total_viewing_time, weighted_scores } = insights;
+    let { total_viewing_time, weighted_scores } = insights;
+    total_viewing_time = (maxAmt*60*60)*5;
 
     // (1) Find top negative vs positive
     const { emotions, political_bias } = weighted_scores;
@@ -237,10 +250,44 @@ const fillInsights = async () => {
     negElem.querySelector(".percent").innerHTML = Math.round((neg > pos ? neg : pos) * 100 / total) + "%";
     negElem.querySelector("u").innerHTML = neg > pos ? "negative" : "positive";
 
+    // Fill insights about negative amount
+    negElem.querySelector(".card-back").innerHTML =
+        (neg > pos && neg > 0.2) ?
+        `You've been consuming more negative content recently. The following articles may help lighten your mind:<br>
+        <ul>
+            <li><a href="https://www.calm.com/blog/how-to-enjoy-life" target="_blank">How to enjoy life</a></li>
+            <li><a href="https://katebowler.com/podcasts/serious-about-fun/" target="_blank">Serious about Fun</a></li>
+            <li><a href="https://podcasts.apple.com/us/podcast/what-you-need-to-know-to-have-more-fun-today-with/id1564530722?i=1000652805500"target="_blank">We Can Do Hard Things</a></li>
+        </ul>` :
+        "You're right on track! Keep going, you rockstar!";
+
+    // Take the negativity amount and use it to find the amount of time
+    // we consumed negative content
+    const negAmt = neg * total_viewing_time;
+    const negPercent = document.querySelector(".neg-percent");
+    negPercent.style.setProperty("--percent", (negAmt / (maxAmt*60*60)) * 100 + "%");
+    // Fill text with the amount of time we've spent consuming negative content
+    const negTimeElem = document.querySelector(".neg-percent-txt");
+    negTimeElem.innerHTML = (negAmt < 60 ?
+        negAmt + "s" : negAmt / 60 < 60 ? Math.round(negAmt/60 * 100)/100 + "min" : 
+        Math.round(negAmt/60/60 * 100)/100 + "hr") + " / " + maxAmt + "hr";
+
+    // If they've read less than maxAmt of negative content,
+    // hide the warning
+    const negWarning = document.querySelector(".neg-insight");
+    if(negAmt < MAX_TIME_HR*60*60) negWarning.style.display = "none";
+
     const timeElem = document.querySelector(".time-browsing");
     timeElem.querySelector(".percent").innerHTML = total_viewing_time < 60 ?
         total_viewing_time + "s" : total_viewing_time / 60 < 60 ? Math.round(total_viewing_time/60 * 100)/100 + "min" : 
         Math.round(total_viewing_time/60/60 * 100)/100 + "hr";
+
+    // Fill insights about amount of time they're on internet
+    timeElem.querySelector(".card-back").innerHTML =
+        (total_viewing_time > MAX_TIME_HR * 60 * 60) ?
+        `You've spent a while on the internet. We would recommend taking a quick break, or going for a short walk!` :
+        "You're right on track! Keep going, you rockstar!";
+
 
     const { left, center, right } = political_bias;
     const totalPol = left + center + right;
@@ -249,6 +296,23 @@ const fillInsights = async () => {
         right > center ? "right-leaning" : "centrist";
     politicalElem.querySelector(".percent").innerHTML = Math.round(Math.max(left, center, right) * 100 / totalPol) + "%";
     politicalElem.querySelector("u").innerHTML = bestVal;
+
+    politicalElem.querySelector(".card-back").innerHTML =
+        bestVal === "left-leaning" ?
+        `We'd recommend engaging with different opinions from the content you typically consume.
+        Here are some recommendations:
+        <ul>
+            <li><a href="https://www.economist.com/" target="_blank">The Economist</a></li>
+            <li><a href="https://apnews.com/" target="_blank">AP News</a></li>
+            <li><a href="https://www.wsj.com/" target="_blank">WSJ</a></li>
+        </ul>` :
+        bestVal === "right-leaning" ?
+        `We'd recommend engaging with different opinions from the content you typically consume.
+        Here are some recommendations:
+        <li><a href="https://www.cnn.com/" target="_blank">CNN</a></li>
+            <li><a href="https://apnews.com/" target="_blank">AP News</a></li>
+            <li><a href="https://abcnews.go.com/" target="_blank">ABC News</a></li>` :
+        "Looks like you consume content from many different sources. Great job!";
 }
 
 // Fill chart with information from list

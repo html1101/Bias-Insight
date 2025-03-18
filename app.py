@@ -209,6 +209,8 @@ def tokenize(sentences):
     words = []
     for sentence in sentences:
         w = word_extraction(sentence.translate({ord(x): '' for x in SPECIAL_CHARS}))
+        if len(w) <= 2:
+            continue
         words.extend(w)
         words = sorted(list(set(words)))
     return words
